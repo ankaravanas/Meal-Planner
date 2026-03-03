@@ -8,18 +8,14 @@ import logo from '@/assets/logo.svg';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, isAdmin, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   // Redirect based on auth status
   useEffect(() => {
-    if (!isLoading) {
-      if (user && isAdmin) {
-        // User is authenticated and is admin - redirect to dashboard
-        navigate('/dashboard');
-      }
-      // If not authenticated, show landing page with login button
+    if (!isLoading && isAuthenticated) {
+      navigate('/dashboard');
     }
-  }, [user, isAdmin, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, navigate]);
 
   if (isLoading) {
     return (

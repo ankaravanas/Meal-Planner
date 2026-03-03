@@ -41,24 +41,21 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { signOut } = useAuth();
 
   // Close mobile menu on route change
   useEffect(() => {
     onMobileClose();
   }, [location.pathname, onMobileClose]);
 
-  const handleLogout = async () => {
-    await signOut();
+  const handleLogout = () => {
+    signOut();
     navigate('/auth');
     toast.success('Signed out successfully');
   };
 
   const getUserInitials = () => {
-    if (user?.email) {
-      return user.email.charAt(0).toUpperCase();
-    }
-    return 'A';
+    return 'A'; // Demo user
   };
 
   const isActive = (path: string) => {

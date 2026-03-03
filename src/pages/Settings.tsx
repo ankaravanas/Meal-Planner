@@ -4,50 +4,35 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import {
-  Loader2, User, Mail, Save, LogOut, Shield, Brain, Cpu,
+  Loader2, Save, LogOut, Brain, Cpu,
   UtensilsCrossed, FileText, Users, Database
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { KnowledgeBaseService, KnowledgeBaseStats } from '@/services/knowledgeBaseService';
 
 const AI_MODELS = [
-  { value: 'gpt-4o', label: 'GPT-4o (Recommended)', description: 'Γρήγορο και αξιόπιστο' },
-  { value: 'gpt-4o-mini', label: 'GPT-4o Mini', description: 'Πιο οικονομικό' },
+  { value: 'gpt-4o', label: 'GPT-4o (Recommended)', description: 'Fast and reliable' },
+  { value: 'gpt-4o-mini', label: 'GPT-4o Mini', description: 'More economical' },
 ];
 
 const Settings: React.FC = () => {
-  const { user, signOut } = useAuth();
+  const { signOut } = useAuth();
   const navigate = useNavigate();
 
-  const [displayName, setDisplayName] = useState('');
   const [aiModel, setAiModel] = useState('gpt-4o');
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [isSavingAI, setIsSavingAI] = useState(false);
   const [kbStats, setKbStats] = useState<KnowledgeBaseStats | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user) return;
-
       try {
-        const { data: profileData } = await supabase
-          .from('admin_profiles')
-          .select('display_name')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (profileData) {
-          setDisplayName(profileData.display_name || '');
-        }
-
         const { data: settingsData } = await supabase
           .from('app_settings')
           .select('ai_model')
@@ -68,29 +53,7 @@ const Settings: React.FC = () => {
     };
 
     fetchData();
-  }, [user]);
-
-  const handleSaveProfile = async () => {
-    if (!user) return;
-    setIsSaving(true);
-
-    try {
-      const { error } = await supabase
-        .from('admin_profiles')
-        .update({ display_name: displayName.trim() })
-        .eq('id', user.id);
-
-      if (error) {
-        toast.error('Σφάλμα κατά την αποθήκευση του προφίλ');
-      } else {
-        toast.success('Το προφίλ αποθηκεύτηκε επιτυχώς');
-      }
-    } catch (err) {
-      toast.error('Προέκυψε ένα σφάλμα');
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  }, []);
 
   const handleSaveAIModel = async () => {
     setIsSavingAI(true);
@@ -107,30 +70,30 @@ const Settings: React.FC = () => {
           .insert({ id: 'default', ai_model: aiModel });
 
         if (insertError) {
-          toast.error('Σφάλμα κατά την αποθήκευση του μοντέλου AI');
+          toast.error('Error saving AI model');
           return;
         }
       }
 
-      toast.success('Το μοντέλο AI αποθηκεύτηκε επιτυχώς');
+      toast.success('AI model saved successfully');
     } catch (err) {
-      toast.error('Προέκυψε ένα σφάλμα');
+      toast.error('An error occurred');
     } finally {
       setIsSavingAI(false);
     }
   };
 
-  const handleLogout = async () => {
-    await signOut();
+  const handleLogout = () => {
+    signOut();
     navigate('/auth');
-    toast.success('Αποσυνδεθήκατε επιτυχώς');
+    toast.success('Signed out successfully');
   };
 
   if (isLoading) {
     return (
       <DashboardLayout
-        title="Ρυθμίσεις"
-        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Ρυθμίσεις' }]}
+        title="Settings"
+        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Settings' }]}
       >
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -141,89 +104,40 @@ const Settings: React.FC = () => {
 
   return (
     <DashboardLayout
-      title="Ρυθμίσεις"
-      subtitle="Διαχείριση λογαριασμού και ρυθμίσεων"
-      breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Ρυθμίσεις' }]}
+      title="Settings"
+      subtitle="Application settings and configuration"
+      breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Settings' }]}
     >
       <div className="max-w-2xl space-y-6">
-        {/* Profile Card */}
-        <Card className="shadow-soft border-border/50">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <User className="h-5 w-5 text-primary" />
-              <CardTitle>Προφίλ Διαχειριστή</CardTitle>
-            </div>
-            <CardDescription>
-              Διαχειριστείτε τις πληροφορίες του λογαριασμού σας
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={user?.email || ''}
-                disabled
-                className="bg-muted"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="displayName" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Όνομα Εμφάνισης
-              </Label>
-              <Input
-                id="displayName"
-                type="text"
-                placeholder="π.χ. Κατερίνα"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                maxLength={100}
-              />
-            </div>
-
-            <Button onClick={handleSaveProfile} disabled={isSaving}>
-              {isSaving ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Αποθήκευση...</>
-              ) : (
-                <><Save className="mr-2 h-4 w-4" />Αποθήκευση</>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-
         {/* AI Settings Card */}
         <Card className="shadow-soft border-border/50">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Cpu className="h-5 w-5 text-primary" />
-              <CardTitle>Ρυθμίσεις AI</CardTitle>
+              <CardTitle>AI Settings</CardTitle>
             </div>
             <CardDescription>
-              Επιλέξτε το μοντέλο AI για τη δημιουργία διατροφικών προγραμμάτων
+              Select the AI model for meal plan generation
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="aiModel" className="flex items-center gap-2">
                 <Brain className="h-4 w-4" />
-                Μοντέλο AI
+                AI Model
               </Label>
               <Select value={aiModel} onValueChange={setAiModel}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Επιλέξτε μοντέλο" />
+                  <SelectValue placeholder="Select model" />
                 </SelectTrigger>
                 <SelectContent>
                   {AI_MODELS.map((model) => (
                     <SelectItem key={model.value} value={model.value}>
                       <div className="flex flex-col">
                         <span>{model.label}</span>
-                        <span className="text-xs text-muted-foreground">{model.description}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {model.description}
+                        </span>
                       </div>
                     </SelectItem>
                   ))}
@@ -233,85 +147,74 @@ const Settings: React.FC = () => {
 
             <Button onClick={handleSaveAIModel} disabled={isSavingAI}>
               {isSavingAI ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Αποθήκευση...</>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
               ) : (
-                <><Save className="mr-2 h-4 w-4" />Αποθήκευση AI</>
+                <><Save className="mr-2 h-4 w-4" />Save</>
               )}
             </Button>
           </CardContent>
         </Card>
 
         {/* Knowledge Base Stats */}
-        <Card className="shadow-soft border-border/50">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Database className="h-5 w-5 text-primary" />
-              <CardTitle>Στατιστικά Δεδομένων</CardTitle>
-            </div>
-            <CardDescription>
-              Επισκόπηση των δεδομένων στο σύστημα
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-muted/50 rounded-lg">
-                <UtensilsCrossed className="h-5 w-5 mx-auto mb-2 text-primary" />
-                <p className="text-2xl font-bold">{kbStats?.totalMeals || 0}</p>
-                <p className="text-sm text-muted-foreground">Γεύματα</p>
+        {kbStats && (
+          <Card className="shadow-soft border-border/50">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Database className="h-5 w-5 text-primary" />
+                <CardTitle>Knowledge Base</CardTitle>
               </div>
-              <div className="text-center p-4 bg-muted/50 rounded-lg">
-                <FileText className="h-5 w-5 mx-auto mb-2 text-primary" />
-                <p className="text-2xl font-bold">{kbStats?.totalPlans || 0}</p>
-                <p className="text-sm text-muted-foreground">Προγράμματα</p>
+              <CardDescription>
+                Statistics about your data
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <Users className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-2xl font-bold">{kbStats.totalClients}</p>
+                    <p className="text-sm text-muted-foreground">Clients</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <FileText className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-2xl font-bold">{kbStats.totalMealPlans}</p>
+                    <p className="text-sm text-muted-foreground">Meal Plans</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <UtensilsCrossed className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-2xl font-bold">{kbStats.totalMeals}</p>
+                    <p className="text-sm text-muted-foreground">Meals</p>
+                  </div>
+                </div>
               </div>
-              <div className="text-center p-4 bg-muted/50 rounded-lg">
-                <Users className="h-5 w-5 mx-auto mb-2 text-primary" />
-                <p className="text-2xl font-bold">{kbStats?.totalClients || 0}</p>
-                <p className="text-sm text-muted-foreground">Πελάτες</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Security Card */}
-        <Card className="shadow-soft border-border/50">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary" />
-              <CardTitle>Ασφάλεια</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <h4 className="font-medium mb-2">Μέθοδος Σύνδεσης</h4>
-              <p className="text-sm text-muted-foreground">Magic Link authentication</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Links */}
-        <Card className="shadow-soft border-border/50">
-          <CardHeader>
-            <CardTitle>Άλλες Ρυθμίσεις</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Button variant="outline" className="w-full justify-start" asChild>
-              <Link to="/settings/ai-prompts">
-                <Brain className="mr-2 h-4 w-4" />
-                Διαχείριση AI Prompts
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         <Separator />
 
-        {/* Logout */}
-        <Card className="border-destructive/20 shadow-soft">
-          <CardContent className="pt-6">
-            <Button variant="destructive" onClick={handleLogout} className="w-full">
+        {/* Sign Out */}
+        <Card className="shadow-soft border-border/50">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <LogOut className="h-5 w-5 text-destructive" />
+              <CardTitle>Sign Out</CardTitle>
+            </div>
+            <CardDescription>
+              Exit the application
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="destructive"
+              onClick={handleLogout}
+            >
               <LogOut className="mr-2 h-4 w-4" />
-              Αποσύνδεση
+              Sign Out
             </Button>
           </CardContent>
         </Card>
