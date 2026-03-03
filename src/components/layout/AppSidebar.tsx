@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   Users,
   UtensilsCrossed,
-  BookOpen,
   Settings,
   LogOut,
   Menu,
@@ -29,7 +28,6 @@ const navigationItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/clients', label: 'Clients', icon: Users },
   { path: '/meal-plans', label: 'Meal Plans', icon: UtensilsCrossed },
-  { path: '/recipes', label: 'Recipes', icon: BookOpen },
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
 
