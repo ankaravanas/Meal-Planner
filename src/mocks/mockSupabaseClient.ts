@@ -34,10 +34,7 @@ const STORAGE_KEYS = {
 
 // Initialize storage with seed data
 function initializeStorage() {
-  if (localStorage.getItem(STORAGE_KEYS.INITIALIZED)) {
-    return;
-  }
-
+  // Always reinitialize for fresh data
   localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify([DEMO_CLIENT]));
   localStorage.setItem(STORAGE_KEYS.MEAL_PLANS, JSON.stringify([DEMO_STRUCTURED_PLAN, DEMO_FLEXIBLE_PLAN]));
   localStorage.setItem(STORAGE_KEYS.MEAL_CATEGORIES, JSON.stringify(MEAL_CATEGORIES));
@@ -47,7 +44,7 @@ function initializeStorage() {
   localStorage.setItem(STORAGE_KEYS.USER_ROLES, JSON.stringify(DEMO_USER_ROLES));
   localStorage.setItem(STORAGE_KEYS.CLIENT_HISTORY, JSON.stringify([]));
   localStorage.setItem(STORAGE_KEYS.AI_PROMPTS, JSON.stringify(DEMO_AI_PROMPTS));
-  localStorage.setItem(STORAGE_KEYS.APP_SETTINGS, JSON.stringify(DEMO_APP_SETTINGS));
+  localStorage.setItem(STORAGE_KEYS.APP_SETTINGS, JSON.stringify([{ ...DEMO_APP_SETTINGS, id: 'default' }]));
   localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
 
   console.log('[MockSupabase] Initialized with demo data');
@@ -57,7 +54,13 @@ function initializeStorage() {
 function getTable(tableName: string): any[] {
   const key = `${STORAGE_PREFIX}${tableName}`;
   const data = localStorage.getItem(key);
-  return data ? JSON.parse(data) : [];
+  if (!data) return [];
+  try {
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    return [];
+  }
 }
 
 // Set table data to localStorage
@@ -77,13 +80,13 @@ const TABLE_MAP: Record<string, string> = {
   user_roles: 'user_roles',
   client_history_notes: 'client_history',
   ai_prompt_templates: 'ai_prompts',
-  app_settings: 'app_settings'
+  app_settings: 'app_settings',
+  admin_profiles: 'admin_profiles'
 };
 
 // Query builder class
 class MockQueryBuilder {
   private tableName: string;
-  private data: any[];
   private filters: Array<{ column: string; operator: string; value: any }> = [];
   private selectedColumns: string | null = null;
   private orderColumn: string | null = null;
@@ -96,7 +99,10 @@ class MockQueryBuilder {
 
   constructor(tableName: string) {
     this.tableName = TABLE_MAP[tableName] || tableName;
-    this.data = getTable(this.tableName);
+  }
+
+  private getData(): any[] {
+    return getTable(this.tableName);
   }
 
   select(columns: string = '*', options?: { count?: string; head?: boolean }) {
@@ -115,8 +121,18 @@ class MockQueryBuilder {
     return this;
   }
 
+  neq(column: string, value: any) {
+    this.filters.push({ column, operator: 'neq', value });
+    return this;
+  }
+
   ilike(column: string, pattern: string) {
     this.filters.push({ column, operator: 'ilike', value: pattern });
+    return this;
+  }
+
+  in(column: string, values: any[]) {
+    this.filters.push({ column, operator: 'in', value: values });
     return this;
   }
 
@@ -131,17 +147,24 @@ class MockQueryBuilder {
     return this;
   }
 
+  range(start: number, end: number) {
+    // For pagination - just limit for now
+    this.limitCount = end - start + 1;
+    return this;
+  }
+
   single() {
     this.singleResult = true;
-    return this.execute();
+    return this;
   }
 
   maybeSingle() {
     this.maybeSingleResult = true;
-    return this.execute();
+    return this;
   }
 
   async insert(records: any | any[]) {
+    const data = this.getData();
     const recordsArray = Array.isArray(records) ? records : [records];
     const newRecords = recordsArray.map(record => ({
       ...record,
@@ -149,16 +172,15 @@ class MockQueryBuilder {
       created_at: record.created_at || new Date().toISOString()
     }));
 
-    this.data = [...this.data, ...newRecords];
-    setTable(this.tableName, this.data);
-
-    return { data: newRecords, error: null };
+    setTable(this.tableName, [...data, ...newRecords]);
+    return { data: newRecords.length === 1 ? newRecords[0] : newRecords, error: null };
   }
 
   async update(updates: any) {
+    const data = this.getData();
     let updatedRecords: any[] = [];
 
-    this.data = this.data.map(record => {
+    const newData = data.map(record => {
       if (this.matchesFilters(record)) {
         const updated = { ...record, ...updates, updated_at: new Date().toISOString() };
         updatedRecords.push(updated);
@@ -167,15 +189,46 @@ class MockQueryBuilder {
       return record;
     });
 
-    setTable(this.tableName, this.data);
+    setTable(this.tableName, newData);
     return { data: updatedRecords, error: null };
   }
 
   async delete() {
-    const deletedRecords = this.data.filter(record => this.matchesFilters(record));
-    this.data = this.data.filter(record => !this.matchesFilters(record));
-    setTable(this.tableName, this.data);
+    const data = this.getData();
+    const deletedRecords = data.filter(record => this.matchesFilters(record));
+    const remainingData = data.filter(record => !this.matchesFilters(record));
+    setTable(this.tableName, remainingData);
     return { data: deletedRecords, error: null };
+  }
+
+  async upsert(records: any | any[], options?: { onConflict?: string }) {
+    const data = this.getData();
+    const recordsArray = Array.isArray(records) ? records : [records];
+    const conflictKey = options?.onConflict || 'id';
+
+    let newData = [...data];
+    const upsertedRecords: any[] = [];
+
+    for (const record of recordsArray) {
+      const existingIndex = newData.findIndex(r => r[conflictKey] === record[conflictKey]);
+      const newRecord = {
+        ...record,
+        id: record.id || `${this.tableName}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        updated_at: new Date().toISOString()
+      };
+
+      if (existingIndex >= 0) {
+        newData[existingIndex] = { ...newData[existingIndex], ...newRecord };
+        upsertedRecords.push(newData[existingIndex]);
+      } else {
+        newRecord.created_at = newRecord.created_at || new Date().toISOString();
+        newData.push(newRecord);
+        upsertedRecords.push(newRecord);
+      }
+    }
+
+    setTable(this.tableName, newData);
+    return { data: upsertedRecords, error: null };
   }
 
   private matchesFilters(record: any): boolean {
@@ -184,17 +237,21 @@ class MockQueryBuilder {
       switch (filter.operator) {
         case 'eq':
           return value === filter.value;
+        case 'neq':
+          return value !== filter.value;
         case 'ilike':
           const pattern = filter.value.replace(/%/g, '.*');
-          return new RegExp(pattern, 'i').test(value);
+          return new RegExp(pattern, 'i').test(String(value || ''));
+        case 'in':
+          return filter.value.includes(value);
         default:
           return true;
       }
     });
   }
 
-  private applyFilters(): any[] {
-    return this.data.filter(record => this.matchesFilters(record));
+  private applyFilters(data: any[]): any[] {
+    return data.filter(record => this.matchesFilters(record));
   }
 
   private applyOrder(data: any[]): any[] {
@@ -215,7 +272,7 @@ class MockQueryBuilder {
       return record;
     }
 
-    // Handle nested relations (e.g., meal_categories:category_id(name))
+    // Handle nested relations (e.g., clients:client_id(name))
     const columns = this.selectedColumns.split(',').map(c => c.trim());
     const result: any = {};
 
@@ -244,114 +301,73 @@ class MockQueryBuilder {
     return result;
   }
 
-  private execute(): Promise<{ data: any; error: any; count?: number }> {
-    return new Promise(resolve => {
-      // Small delay to simulate network
-      setTimeout(() => {
-        try {
-          let result = this.applyFilters();
-          result = this.applyOrder(result);
-
-          if (this.limitCount) {
-            result = result.slice(0, this.limitCount);
-          }
-
-          result = result.map(r => this.selectColumns(r));
-
-          if (this.countOnly && this.headOnly) {
-            resolve({ data: null, error: null, count: result.length });
-            return;
-          }
-
-          if (this.singleResult) {
-            if (result.length === 0) {
-              resolve({ data: null, error: { code: 'PGRST116', message: 'No rows found' } });
-            } else {
-              resolve({ data: result[0], error: null });
-            }
-            return;
-          }
-
-          if (this.maybeSingleResult) {
-            resolve({ data: result.length > 0 ? result[0] : null, error: null });
-            return;
-          }
-
-          resolve({ data: result, error: null });
-        } catch (error) {
-          resolve({ data: null, error });
-        }
-      }, 50);
-    });
+  // Make the query builder thenable
+  then(resolve: (result: any) => void, reject?: (error: any) => void) {
+    this.execute().then(resolve, reject);
   }
 
-  then(resolve: (value: any) => void) {
-    this.execute().then(resolve);
+  private async execute(): Promise<{ data: any; error: any; count?: number }> {
+    try {
+      let data = this.getData();
+      let result = this.applyFilters(data);
+      result = this.applyOrder(result);
+
+      const totalCount = result.length;
+
+      if (this.limitCount) {
+        result = result.slice(0, this.limitCount);
+      }
+
+      result = result.map(r => this.selectColumns(r));
+
+      // Handle count with head
+      if (this.countOnly && this.headOnly) {
+        return { data: null, error: null, count: totalCount };
+      }
+
+      // Handle single result
+      if (this.singleResult) {
+        if (result.length === 0) {
+          return { data: null, error: { code: 'PGRST116', message: 'No rows found' } };
+        }
+        return { data: result[0], error: null };
+      }
+
+      // Handle maybeSingle
+      if (this.maybeSingleResult) {
+        return { data: result.length > 0 ? result[0] : null, error: null };
+      }
+
+      return { data: result, error: null, count: totalCount };
+    } catch (error) {
+      return { data: null, error };
+    }
   }
 }
 
 // Mock Auth Client
 class MockAuthClient {
-  private session: any = null;
-  private listeners: Array<(event: string, session: any) => void> = [];
-
-  constructor() {
-    const savedSession = localStorage.getItem(STORAGE_KEYS.SESSION);
-    if (savedSession) {
-      this.session = JSON.parse(savedSession);
-    }
-  }
-
   async getSession() {
-    return { data: { session: this.session }, error: null };
+    return { data: { session: null }, error: null };
   }
 
   async signInWithOtp({ email }: { email: string; options?: any }) {
-    // In demo mode, auto-sign in
-    const user = {
-      id: 'demo-user-001',
-      email: email,
-      user_metadata: { display_name: email.split('@')[0] },
-      created_at: new Date().toISOString()
-    };
-
-    this.session = {
-      access_token: 'demo-token-' + Date.now(),
-      refresh_token: 'demo-refresh-' + Date.now(),
-      expires_at: Date.now() + 86400000,
-      user
-    };
-
-    localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(this.session));
-
-    // Notify listeners
-    this.listeners.forEach(cb => cb('SIGNED_IN', this.session));
-
-    console.log('[MockAuth] Signed in as:', email);
+    console.log('[MockAuth] signInWithOtp called with:', email);
     return { data: {}, error: null };
   }
 
   async signOut() {
-    this.session = null;
-    localStorage.removeItem(STORAGE_KEYS.SESSION);
-    this.listeners.forEach(cb => cb('SIGNED_OUT', null));
     return { error: null };
   }
 
   onAuthStateChange(callback: (event: string, session: any) => void) {
-    this.listeners.push(callback);
-
-    // Immediately call with current state
-    if (this.session) {
-      setTimeout(() => callback('SIGNED_IN', this.session), 0);
-    }
+    // Call immediately with no session
+    setTimeout(() => callback('INITIAL_SESSION', null), 0);
 
     return {
       data: {
         subscription: {
-          unsubscribe: () => {
-            this.listeners = this.listeners.filter(cb => cb !== callback);
-          }
+          unsubscribe: () => {}
         }
       }
     };
@@ -420,30 +436,27 @@ class MockRealtimeChannel {
     this.channelName = channelName;
   }
 
-  on(event: string, options: any, callback: Function) {
+  on(event: string, options: any, callback?: Function) {
     // No-op in demo mode
     return this;
   }
 
-  subscribe() {
-    console.log(`[MockRealtime] Subscribed to channel: ${this.channelName}`);
+  subscribe(callback?: Function) {
+    if (callback) callback('SUBSCRIBED');
     return this;
   }
 }
 
+// Initialize on module load
+initializeStorage();
+
 // Create mock Supabase client
-function createMockSupabaseClient() {
-  // Initialize storage on first use
-  initializeStorage();
+export const supabase = {
+  from: (table: string) => new MockQueryBuilder(table),
+  auth: new MockAuthClient(),
+  functions: new MockFunctionsClient(),
+  channel: (name: string) => new MockRealtimeChannel(name),
+  removeChannel: () => {}
+};
 
-  return {
-    from: (table: string) => new MockQueryBuilder(table),
-    auth: new MockAuthClient(),
-    functions: new MockFunctionsClient(),
-    channel: (name: string) => new MockRealtimeChannel(name),
-    removeChannel: () => {}
-  };
-}
-
-export const supabase = createMockSupabaseClient();
 export default supabase;
