@@ -155,7 +155,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">
-                  {user?.email?.split('@')[0] || 'Admin'}
+                  Admin
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Administrator
@@ -244,7 +244,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">
-                {user?.email?.split('@')[0] || 'Admin'}
+                Admin
               </p>
               <p className="text-xs text-muted-foreground">
                 Administrator
