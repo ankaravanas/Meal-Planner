@@ -1,0 +1,370 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Brand Colors - SaaS Dashboard */
+    --background: 210 20% 98%; /* #F8FAFB - Light gray background */
+    --foreground: 60 1% 30%; /* #4D4D4A - Dark gray */
+
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 60 1% 30%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 60 1% 30%;
+
+    /* Pink as primary CTA */
+    --primary: 330 60% 72%; /* #E18CB7 - Pink */
+    --primary-foreground: 0 0% 100%;
+
+    /* Mint Green as secondary/active */
+    --secondary: 140 35% 72%; /* #AEDBC0 - Mint Green */
+    --secondary-foreground: 60 1% 30%;
+
+    --muted: 210 20% 96%;
+    --muted-foreground: 60 1% 45%;
+
+    --accent: 330 60% 95%; /* Light pink for hover */
+    --accent-foreground: 60 1% 30%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 13% 91%; /* #E5E7EB - Subtle gray border */
+    --input: 220 13% 91%;
+    --ring: 140 35% 72%; /* Mint green focus ring */
+
+    --radius: 0.75rem;
+
+    /* Sidebar colors using brand palette */
+    --sidebar-background: 0 0% 100%; /* Pure white sidebar */
+    --sidebar-foreground: 60 1% 40%;
+    --sidebar-primary: 140 35% 72%; /* Mint green for active */
+    --sidebar-primary-foreground: 60 1% 30%;
+    --sidebar-accent: 330 60% 95%; /* Light pink hover */
+    --sidebar-accent-foreground: 60 1% 30%;
+    --sidebar-border: 210 20% 92%;
+    --sidebar-ring: 330 60% 72%;
+
+    /* Brand specific tokens */
+    --brand-pink: 330 60% 72%; /* #E18CB7 */
+    --brand-mint: 140 35% 72%; /* #AEDBC0 */
+    --brand-gray: 60 1% 30%; /* #4D4D4A */
+    --brand-white: 0 0% 100%; /* #FFFFFF */
+    --brand-light: 210 20% 98%; /* #F8FAFB */
+
+    /* Typography color tokens */
+    --text-primary: 220 13% 13%; /* #1F2937 - gray-800 */
+    --text-secondary: 220 9% 26%; /* #374151 - gray-700 */
+    --text-tertiary: 220 9% 36%; /* #4B5563 - gray-600 */
+    --text-muted: 220 9% 46%; /* #6B7280 - gray-500 */
+    --text-subtle: 220 9% 64%; /* #9CA3AF - gray-400 */
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 330 60% 72%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 140 35% 30%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 140 35% 72%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 140 35% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 330 60% 72%;
+
+    /* Dark mode typography */
+    --text-primary: 210 40% 98%;
+    --text-secondary: 210 30% 90%;
+    --text-tertiary: 210 20% 80%;
+    --text-muted: 210 15% 65%;
+    --text-subtle: 210 10% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  /* Base typography styles */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-[hsl(var(--text-primary))] font-semibold tracking-tight;
+  }
+
+  p {
+    @apply text-[hsl(var(--text-tertiary))] leading-relaxed;
+  }
+}
+
+/* Typography utility classes */
+@layer utilities {
+  /* Display heading - Hero/Dashboard titles */
+  .text-display {
+    @apply text-[2.25rem] font-bold leading-[1.2] text-[hsl(var(--text-primary))] tracking-tight;
+  }
+  
+  /* Responsive display */
+  @screen md {
+    .text-display {
+      @apply text-[2.025rem]; /* 10% reduction for tablet */
+    }
+  }
+  
+  @screen sm {
+    .text-display {
+      @apply text-[1.8rem]; /* 20% reduction for mobile */
+    }
+  }
+
+  /* Heading 1 - Page titles */
+  .text-h1 {
+    @apply text-[1.875rem] font-semibold leading-[1.3] text-[hsl(var(--text-primary))] tracking-tight;
+  }
+  
+  @screen sm {
+    .text-h1 {
+      @apply text-[1.5rem];
+    }
+  }
+
+  /* Heading 2 - Section headers */
+  .text-h2 {
+    @apply text-[1.5rem] font-semibold leading-[1.4] text-[hsl(var(--text-secondary))];
+  }
+  
+  @screen sm {
+    .text-h2 {
+      @apply text-[1.25rem];
+    }
+  }
+
+  /* Heading 3 - Card titles, subsections */
+  .text-h3 {
+    @apply text-[1.125rem] font-semibold leading-[1.5] text-[hsl(var(--text-secondary))];
+  }
+  
+  @screen sm {
+    .text-h3 {
+      @apply text-[1rem];
+    }
+  }
+
+  /* Body Large - Main content */
+  .text-body-lg {
+    @apply text-base font-normal leading-[1.6] text-[hsl(var(--text-tertiary))];
+  }
+
+  /* Body - Secondary text, labels */
+  .text-body {
+    @apply text-sm font-normal leading-[1.6] text-[hsl(var(--text-muted))];
+  }
+
+  /* Caption - Timestamps, helper text */
+  .text-caption {
+    @apply text-xs font-normal leading-[1.5] text-[hsl(var(--text-subtle))];
+  }
+
+  /* Uppercase label styling */
+  .text-label {
+    @apply text-xs font-semibold uppercase tracking-uppercase text-[hsl(var(--text-muted))];
+  }
+}
+
+/* Sidebar utilities */
+@layer utilities {
+  .sidebar-nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200;
+  }
+  
+  .sidebar-nav-item-active {
+    @apply bg-[hsl(var(--brand-mint))] text-[hsl(var(--brand-gray))];
+  }
+  
+  .sidebar-nav-item-hover {
+    @apply hover:bg-[hsl(var(--brand-pink)/0.1)];
+  }
+}
+
+/* Modern SaaS Card System */
+@layer components {
+  .saas-card {
+    @apply bg-card border border-border rounded-xl p-6 shadow-sm transition-all duration-200;
+  }
+  
+  .saas-card-hover {
+    @apply hover:shadow-md hover:-translate-y-0.5;
+  }
+  
+  .saas-card-interactive {
+    @apply saas-card saas-card-hover cursor-pointer;
+  }
+  
+  /* Meal option card styles */
+  .meal-option-card {
+    @apply bg-card border border-border rounded-xl p-4 transition-all duration-200 relative;
+  }
+  
+  .meal-option-card:hover {
+    @apply shadow-md -translate-y-0.5;
+  }
+  
+  .meal-option-card .card-actions {
+    @apply opacity-0 transition-opacity duration-200;
+  }
+  
+  .meal-option-card:hover .card-actions {
+    @apply opacity-100;
+  }
+  
+  /* Category badge styles */
+  .category-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold;
+  }
+  
+  .category-badge-breakfast {
+    @apply bg-orange-100 text-orange-700;
+  }
+  
+  .category-badge-snack {
+    @apply bg-green-100 text-green-700;
+  }
+  
+  .category-badge-lunch {
+    @apply bg-blue-100 text-blue-700;
+  }
+  
+  .category-badge-dinner {
+    @apply bg-purple-100 text-purple-700;
+  }
+  
+  /* Structured plan table styles */
+  .structured-table {
+    @apply w-full border-collapse;
+  }
+  
+  .structured-table th {
+    @apply bg-secondary text-secondary-foreground px-4 py-3 text-left text-sm font-semibold sticky top-0;
+  }
+  
+  .structured-table td {
+    @apply px-4 py-3 border-b border-border text-sm;
+  }
+  
+  .structured-table tr:nth-child(even) td {
+    @apply bg-[hsl(var(--brand-light))];
+  }
+  
+  .structured-table tr:hover td {
+    @apply bg-[hsl(var(--brand-pink)/0.05)];
+  }
+  
+  /* Nutrition info strip */
+  .nutrition-strip {
+    @apply flex items-center gap-3 pt-3 mt-3 border-t border-border text-xs text-muted-foreground;
+  }
+  
+  .nutrition-item {
+    @apply flex items-center gap-1;
+  }
+
+  /* Page layout utilities */
+  .page-container {
+    @apply space-y-8;
+  }
+
+  .page-header {
+    @apply space-y-2 mb-8;
+  }
+
+  .page-title {
+    @apply text-h1;
+  }
+
+  .page-description {
+    @apply text-body-lg max-w-2xl;
+  }
+
+  /* Section utilities */
+  .section {
+    @apply space-y-6 mb-8;
+  }
+
+  .section-header {
+    @apply flex items-center justify-between gap-4 pb-4 border-b-2 border-border;
+  }
+
+  .section-title {
+    @apply text-h2;
+  }
+
+  /* Card content spacing */
+  .card-content-spacing {
+    @apply space-y-4;
+  }
+
+  /* Form spacing */
+  .form-group {
+    @apply space-y-6;
+  }
+
+  .form-row {
+    @apply grid gap-4 sm:grid-cols-2;
+  }
+
+  /* List spacing */
+  .list-spacing {
+    @apply space-y-4;
+  }
+
+  .list-item {
+    @apply p-4;
+  }
+
+  /* Modal/Dialog content */
+  .modal-content {
+    @apply p-8 space-y-6;
+  }
+
+  .modal-header {
+    @apply space-y-2 pb-4 border-b border-border;
+  }
+
+  .modal-footer {
+    @apply flex items-center justify-end gap-3 pt-6 border-t border-border;
+  }
+}
